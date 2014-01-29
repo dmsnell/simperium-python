@@ -161,6 +161,46 @@ class Bucket(object):
         response = self._request(url, headers=self._auth_header())
         return json.loads(response.read())
 
+    def binary_get(self, item_id, key_id, version=None):
+        """
+        Retrieve a binary object by item id and key id. Return the
+        latest version unless a specific version is requested.
+
+        @item_id:  Item's id as returned by Bucket.new()
+        @key_id:   Binary object's key, since multiple objects
+                   can be stored in a given item.
+        @version:  Specific version of item to use for retrieval
+
+        returns:
+            
+
+        """
+        pass
+
+    def binary_new(self, key_id, data):
+        """
+        Create a new binary object by key id. Return the new item id.
+
+        @item_id:  Item's id as returned by Bucket.new()
+        @key_id:   Binary object's key, since multiple objects
+                   can be stored in a given item.
+        @version:  Specific version of item to use for retrieval
+
+        """
+        pass
+
+    def binary_set(self, item_id, key_id, data):
+        """
+        Set binary object by item id and key id.
+
+        @item_id:  Item's id as returned by Bucket.new()
+        @key_id:   Binary object's key, since multiple objects
+                   can be stored in a given item.
+        @version:  Specific version of item to use for retrieval
+
+        """
+        pass
+
     def get(self, item, default=None, version=None):
         """retrieves either the latest version of item from this bucket, or the
             specific version requested"""
