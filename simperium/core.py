@@ -161,7 +161,7 @@ class Bucket(object):
         response = self._request(url, headers=self._auth_header())
         return json.loads(response.read())
 
-    def binary_get(self, item_id, key_id, version=None):
+    def binary_get(self, item_id, key, default=None, version=None):
         """
         Retrieve a binary object by item id and key id. Return the
         latest version unless a specific version is requested.
@@ -171,13 +171,23 @@ class Bucket(object):
                    can be stored in a given item.
         @version:  Specific version of item to use for retrieval
 
-        returns:
-            
+        Returns the actual binary data
 
         """
-        pass
+        url = '%s/%s/i/%s/b/%s' % (self.appname, self.bucket, item_id, key)
+        if version:
+            url += '/v/%s' % version
 
-    def binary_new(self, key_id, data):
+        try:
+            response = self._request(url, headers=self._auth_header())
+        except urllib2.HTTPError, e:
+            if getattr(e, 'code') == 404:
+                return default
+            raise
+
+        return response.read()
+
+    def binary_set(self, item, key, data):
         """
         Create a new binary object by key id. Return the new item id.
 
@@ -187,19 +197,18 @@ class Bucket(object):
         @version:  Specific version of item to use for retrieval
 
         """
-        pass
+        url = '%s/%s/i/%s/b/%s' % (self.appname, self.bucket, item, key)
 
-    def binary_set(self, item_id, key_id, data):
-        """
-        Set binary object by item id and key id.
+        headers =  self._auth_header()
+        headers['Content-Type'] = 'application/octet-stream'
+        headers['Content-Length'] = len(data)
 
-        @item_id:  Item's id as returned by Bucket.new()
-        @key_id:   Binary object's key, since multiple objects
-                   can be stored in a given item.
-        @version:  Specific version of item to use for retrieval
-
-        """
-        pass
+        try:
+            response = self._request(url, data, method='PUT', headers=headers)
+        except urllib2.HTTPError, reason:
+            return reason
+        else:
+            return item
 
     def get(self, item, default=None, version=None):
         """retrieves either the latest version of item from this bucket, or the
