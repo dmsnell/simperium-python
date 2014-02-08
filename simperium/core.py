@@ -161,25 +161,30 @@ class Bucket(object):
         response = self._request(url, headers=self._auth_header())
         return json.loads(response.read())
 
-    def binary_get(self, item, key, default=None, version=None):
+    def binary_get(self, item, key, fetch_data=True, default=None, version=None):
         """
         Retrieve a binary object by item id and key id. Return the
         latest version unless a specific version is requested.
 
-        @item:     Item's id as returned by Bucket.new()
-        @key:      Binary object's key, since multiple objects
-                   can be stored in a given item.
-        @version:  Specific version of item to use for retrieval
-
-        Returns the actual binary data
+        @item:        Item's id as returned by Bucket.new()
+        @key:         Binary object's key, since multiple objects
+                      can be stored in a given item.
+        @fetch_data:  Return the binary data from the object store,
+                      otherwise return a url to the data
+        @version:     Specific version of item to use for retrieval
 
         """
         url = '%s/%s/i/%s/b/%s' % (self.appname, self.bucket, item, key)
         if version:
             url += '/v/%s' % version
 
+        headers = self._auth_header()
+
+        if fetch_data:
+        	headers['X-Do-Redirect'] = 'no'
+
         try:
-            response = self._request(url, headers=self._auth_header())
+            response = self._request(url, headers=headers)
         except urllib2.HTTPError, e:
             if getattr(e, 'code') == 404:
                 return default
