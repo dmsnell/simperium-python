@@ -161,7 +161,7 @@ class Bucket(object):
         response = self._request(url, headers=self._auth_header())
         return json.loads(response.read())
 
-    def binary_get(self, item, key, fetch_data=True, default=None, version=None):
+    def binary_get(self, item, key, fetch_url=False, default=None, version=None):
         """
         Retrieve a binary object by item id and key id. Return the
         latest version unless a specific version is requested.
@@ -180,8 +180,8 @@ class Bucket(object):
 
         headers = self._auth_header()
 
-        if fetch_data:
-        	headers['X-Do-Redirect'] = 'no'
+        if True == fetch_url:
+            headers['X-Do-Redirect'] = 'no'
 
         try:
             response = self._request(url, headers=headers)
