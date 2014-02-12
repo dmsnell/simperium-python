@@ -264,12 +264,9 @@ class Bucket(object):
         else:
             return item
 
-    def get(self, item, default=None, version=None, key=None):
+    def get(self, item, default=None, version=None):
         """retrieves either the latest version of item from this bucket, or the
             specific version requested"""
-        if key:
-            return self.binary_get(item, default=default, version=version, key=key)
-
         url = '%s/%s/i/%s' % (self.appname, self.bucket, item)
         if version:
             url += '/v/%s' % version
@@ -311,10 +308,7 @@ class Bucket(object):
     def new(self, data, ccid=None):
         return self.post(uuid.uuid4().hex, data, ccid=ccid)
 
-    def set(self, item, data, key=None, **kw):
-        if key:
-            return self.binary_set(item, data, key)
-
+    def set(self, item, data, **kw):
         return self.post(item, data, **kw)
 
     def delete(self, item, version=None):
