@@ -3,7 +3,9 @@ import sys
 import uuid
 import urllib
 import urllib2
+import urlparse
 import httplib
+import time
 
 try:
     import simplejson as json
@@ -59,6 +61,29 @@ class Auth(object):
         response = self._request(self.appname+'/authorize/', data)
         return json.loads(response.read())['access_token']
 
+class BinaryResponse:
+    def __init__(self, url):
+        self._url = url
+        self.valid_until = self.url_valid_until()
+
+    def url_valid_until(self):
+        params = urlparse.parse_qs(self._url)
+        return int(params['Expires'][0])
+
+    def check_valid(self):
+        if self.valid_until < time.time():
+            raise UrlError('Access URL has expired.')
+
+    @property
+    def url(self):
+        self.check_valid()
+
+        return self._url
+
+    def read(self):
+        self.check_valid()
+
+        return urllib2.urlopen(self._url).read()
 
 class Bucket(object):
     """
@@ -161,7 +186,35 @@ class Bucket(object):
         response = self._request(url, headers=self._auth_header())
         return json.loads(response.read())
 
-    def binary_get(self, item, key, fetch_url=False, default=None, version=None):
+    def binary_index(self, item):
+        """
+        Returns a list of binary objects stored under
+        the associated item id.
+
+        @item:   Item's id as returned by Bucket.new()
+
+        Returns: {
+            'key name': {
+                'content-type': specified during binary_set(),
+                'content-length': specified during binary_set(),
+            }
+        }
+        """
+
+        item_data = self.get(item)
+        key_list = {}
+
+        for key in item_data:
+            if 'backend' in item_data[key]:
+                if 'AWS' == item_data[key]['backend']:
+                    key_list[key] = {
+                        'content-type': item_data[key]['content-type'],
+                        'content-length': item_data[key]['content-length'],
+                    }
+
+        return json.dumps(key_list)
+
+    def binary_get(self, item, key, default=None, version=None):
         """
         Retrieve a binary object by item id and key id. Return the
         latest version unless a specific version is requested.
@@ -169,8 +222,6 @@ class Bucket(object):
         @item:        Item's id as returned by Bucket.new()
         @key:         Binary object's key, since multiple objects
                       can be stored in a given item.
-        @fetch_data:  Return the binary data from the object store,
-                      otherwise return a url to the data
         @version:     Specific version of item to use for retrieval
 
         """
@@ -179,9 +230,7 @@ class Bucket(object):
             url += '/v/%s' % version
 
         headers = self._auth_header()
-
-        if True == fetch_url:
-            headers['X-Do-Redirect'] = 'no'
+        headers['X-Do-Redirect'] = 'no'
 
         try:
             response = self._request(url, headers=headers)
@@ -190,7 +239,7 @@ class Bucket(object):
                 return default
             raise
 
-        return response.read()
+        return BinaryResponse(response.read())
 
     def binary_set(self, item, key, data):
         """
