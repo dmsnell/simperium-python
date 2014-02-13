@@ -25,7 +25,7 @@ def main():
 
 	print bucket.binary_set(args.item, args.key, args.file.read())
 
-	print bucket.binary_get(args.item, args.key, fetch_url=True)
+	print bucket.binary_get(args.item, args.key).url
 
 if __name__ == "__main__":
 	main()
