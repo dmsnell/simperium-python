@@ -320,7 +320,7 @@ class Bucket(object):
         @item:     Item's id as returned by Bucket.new()
         @key:      Binary object's key, since multiple objects
                    can be stored in a given item.
-        @version:  Specific version of item to use for retrieval
+        @data:     Actual data to be stored on the backend.
 
         """
         url = '%s/%s/i/%s/b/%s' % (self.appname, self.bucket, item, key)
