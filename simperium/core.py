@@ -71,7 +71,17 @@ class BinaryResponse:
         return int(params['Expires'][0])
 
     def check_valid(self):
-        if self.valid_until < time.time():
+        """
+        Although we end up raising an error before
+        the actual URL expires, give the user an
+        extra hour to work with the URL to avoid
+        race conditions where we appear to pass a
+        valid URL that is unusable by the time the
+        user is able to follow it.
+
+        3600 = 1 hour in seconds (60 s/min * 60 min/hr)
+        """
+        if self.valid_until < (time.time() - 3600):
             raise UrlError('Access URL has expired.')
 
     @property
