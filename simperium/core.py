@@ -242,6 +242,10 @@ class Bucket(object):
         if not self.is_valid_hex_string(data['signature'], 64):
             return False
 
+        # Plausible BSON ObjectID?
+        if not self.is_valid_hex_string(data['path'].split('/')[-1], 24):
+            return False
+
         # Nothing else is wrong, so we must hold a binary reference
         return True
 
