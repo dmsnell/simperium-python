@@ -196,6 +196,55 @@ class Bucket(object):
         response = self._request(url, headers=self._auth_header())
         return json.loads(response.read())
 
+    def is_valid_hex_string(self, hex_string, length=None):
+        """
+        Test if hex_string is a valid hexadecimal string
+        consisting only in 0..9a..fA..F
+
+        Also test if length matches passed parameter.
+        """
+        if not None == length:
+            if not length == len(hex_string):
+                return False
+
+        try:
+            int(hex_string, 16)
+        except ValueError:
+            return False
+
+        return True
+
+    def item_has_binary_data(self, data):
+        """
+        Are all of the required meta-data fields present?
+
+        By the way, this great way to test if multiple
+        keys are in a dict comes from...
+        http://stackoverflow.com/a/1285920
+        """
+        if not all (k in data for k in (
+            'content-length',
+            'hash',
+            'signature',
+            'mtime',
+            'path',
+            'jsmtime',
+            'content-type',
+            'backend',
+        )):
+            return False
+
+        # Plausible hash?
+        if not self.is_valid_hex_string(data['hash'], 32):
+            return False
+
+        # Plausible signature?
+        if not self.is_valid_hex_string(data['signature'], 64):
+            return False
+
+        # Nothing else is wrong, so we must hold a binary reference
+        return True
+
     def binary_index(self, item):
         """
         Returns a list of binary objects stored under
@@ -214,9 +263,18 @@ class Bucket(object):
         item_data = self.get(item)
         key_list = {}
 
+        """
+        Because we don't know what to expect when we look inside
+        the returned JSON from each item, we have to assume that
+        each key in the response could potentially refer to
+        stored binary data.
+
+        Since a single item can store multiple references to
+        stored binary data, we must check each top-level key inside
+        the dict returend by .get()
+        """
         for key in item_data:
-            if 'backend' in item_data[key]:
-                if 'AWS' == item_data[key]['backend']:
+            if self.item_has_binary_data(item_data[key]):
                     key_list[key] = {
                         'content-type': item_data[key]['content-type'],
                         'content-length': item_data[key]['content-length'],
